@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+
+
+<body>
+    <script src="task1.js" type="text/javascript"></script>
+    <div style="position:relative">
+        <!--Here we are having 2 canvases one for the background squares while one for plotting the circle-->
+        <canvas id="DemoCanvas1" width="600" height="600" style="margin: 0px;
+        position: absolute; left: 0;top: 0;z-index: 0;
+        "></canvas>
+        <canvas id="DemoCanvas2" width="600" height="600" style="margin: 0px;
+        position: absolute; left: 0;top: 0;z-index: 1;"></canvas>
+    </div>
+
+    <script>
+        var canvas1 = document.getElementById("DemoCanvas1");
+        var canvas2 = document.getElementById("DemoCanvas2");
+        var ctx = canvas1.getContext('2d');
+        var context = canvas2.getContext('2d');
+        var radius, nStartX, nStartY, bIsDrawing, startDrawing, maxdist;
+        nStartX = nStartY = radius = maxdist = 0;
+        //There is a function called mouse move which is working even before having the start point of the circle.
+        //Hence using bIsDrawing as a flag.
+        bIsDrawing = startDrawing = false;
+        var arr = [];
+        var mindist = Infinity
+        var distance = 25
+        //If d = distance from center to given point (x,y)
+        //Dist returns d-radius which is the delta between distance and radius
+        var dist = function (x, y) {
+            var distance = Math.pow(Math.pow(nStartX - x, 2) + Math.pow(nStartY - y, 2), 0.5)
+            return distance - radius
+
+        }
+        //It checks if point a,b is inside a circle or not
+        var isInside = function (a, b) {
+            var distance = Math.pow(Math.pow(nStartX - a, 2) + Math.pow(nStartY - b, 2), 0.5)
+            if (distance > radius) {
+                return 0
+            }
+            return 1
+        }
+        var temp = 0;
+        //This finds all the border points to the given circle. 
+        var checkborder = function (x, y, distance) {
+            //If a point is outside a circle and the point on the left of it is inside a circle and vice versa, it means a circle passes between those points.
+            //Then we check which amoung these 2 points is near to the circle and add to the array.
+            //Similarly if a point is ouside a circle and the point below it is inside the circle and vice versa, it means the circle passes through it.
+            //We again check which among arr[i][j] and arr[i][j+1] are near the perimeter and append in the array.
+
+            //Here we are updating mindist and maxdist to find the inner and outer circles respectively
+            if ((!isInside(x, y) && isInside(x, y + distance)) || (isInside(x, y) && !isInside(x, y + distance))) {
+                if (Math.abs(dist(x, y)) < Math.abs(dist(x, y + distance))) {
+                    temp = [dist(x, y) + radius, dist(x + 10, y) + radius, dist(x, y + 10) + radius, dist(x + 10, y + 10) + radius];
+                    mindist = Math.min(mindist, Math.min(...temp));
+                    maxdist = Math.max(maxdist, Math.max(...temp))
+                    arr.push(x + "," + y)
+                }
+                else {
+                    temp = [dist(x, y + distance) + radius, dist(x + 10, y + distance) + radius, dist(x, y + distance + 10) + radius, dist(x + 10, y + distance + 10) + radius]
+                    mindist = Math.min(mindist, Math.min(...temp))
+                    maxdist = Math.max(maxdist, Math.max(...temp))
+                    arr.push(x + "," + (y + distance))
+                }
+            }
+            if ((!isInside(x, y) && isInside(x - distance, y)) || (isInside(x, y) && !isInside(x - distance, y))) {
+                if (Math.abs(dist(x, y)) < Math.abs(dist(x - distance, y))) {
+                    temp = [dist(x, y) + radius, dist(x + 10, y) + radius, dist(x, y + 10) + radius, dist(x + 10, y + 10) + radius]
+                    mindist = Math.min(mindist, Math.min(...temp))
+                    maxdist = Math.max(maxdist, Math.max(...temp))
+                    arr.push(x + "," + y)
+                }
+                else {
+                    temp = [dist(x - distance, y) + radius, dist(x - distance + 10, y) + radius, dist(x - distance, y + 10) + radius, dist(x - distance + 10, y + 10) + radius]
+                    mindist = Math.min(mindist, Math.min(...temp))
+                    maxdist = Math.max(maxdist, Math.max(...temp))
+                    arr.push((x - distance) + "," + y)
+                }
+            }
+        }
+        //put point is an event handler when we first click the mouse
+        var putPoint = function (e) {
+            mindist = Infinity
+            maxdist = 0
+            arr = []
+            //here we are clearing the rectangle and then refilling it as once a cirlce is drawn and one wants to draw another rectangle,
+            //the previous data should dissapear.arr is also made empty as all previous points have to dissapear.
+            ctx.fillStyle = '#808080';
+            ctx.clearRect(0, 0, canvas1.width, canvas1.height);
+            for (var i = 1; i <= 20; i++) {
+                for (j = 1; j <= 20; j++) {
+                    if (canvas1.getContext) {
+                        // color of fill
+                        ctx.fillRect(distance * i, distance * j, 10, 10); // create rectangle  
+                    }
+                }
+            }
+            if (startDrawing == false) {
+                console.log("came to put point")
+                startDrawing = true;
+            }
+            console.log("came to put point")
+            nStartX = e.clientX; nStartY = e.clientY;
+            bIsDrawing = true; // True only after putpoint event is called.
+            radius = 0;
+        }
+        //This event is used to draw a circle when we are dragging/moving the mouse
+        var drawPoint = function (e) {
+            if (startDrawing) {
+                if (!bIsDrawing)
+                    return;
+                var nDeltaX = nStartX - e.clientX;
+                var nDeltaY = nStartY - e.clientY;
+                //radius is updated dynamically
+                radius = Math.sqrt(nDeltaX * nDeltaX + nDeltaY * nDeltaY)
+                context.clearRect(0, 0, canvas2.width, canvas2.height);
+                context.beginPath();
+                context.strokeStyle = "#0000FF"
+                context.arc(nStartX, nStartY, radius, 0, Math.PI * 2);
+                context.stroke();
+            }
+
+        }
+        //This is when the mouse is released.
+
+        var stopPoint = function (e) {
+            console.log("start x and y", nStartX, nStartY)
+            console.log("radius of the circle is", radius)
+            context.beginPath();
+            context.strokeStyle = "#0000FF"
+            //this is the actual circle which has to be blue in color.
+            context.arc(nStartX, nStartY, radius, 0, Math.PI * 2);
+            context.stroke();
+            if (startDrawing == true) {
+                startDrawing = false
+            }
+            ctx.clearRect(0, 0, canvas1.width, canvas1.height);
+            //This is to fill the array with all the neighborhood values.
+            for (var i = 1; i <= 20; i++) {
+                for (j = 1; j <= 20; j++) {
+                    if (canvas1.getContext) {
+                        checkborder(distance * i, distance * j, distance)
+                    }
+                }
+            }
+            //As we have the array filled with all the points close to the circle we plot all of them.
+            for (var i = 1; i <= 20; i++) {
+                for (var j = 1; j <= 20; j++) {
+                    if (canvas1.getContext) {
+                        // color of fill
+                        str = distance * i + "," + distance * j
+                        if (arr.includes(str)) {
+                            ctx.fillStyle = "#0000FF"
+                            ctx.fillRect(distance * i, distance * j, 10, 10);
+                        }
+                        else {
+                            ctx.fillStyle = '#808080';;
+                            ctx.fillRect(distance * i, distance * j, 10, 10);
+                        }
+                        // create rectangle  
+                    }
+                }
+            }
+            //This is minimum circle 
+            context.beginPath();
+            context.strokeStyle = "#FF0000"
+            context.arc(nStartX, nStartY, mindist, 0, Math.PI * 2);
+            context.stroke();
+            //This is for maximum circle
+            context.beginPath();
+            context.arc(nStartX, nStartY, maxdist, 0, Math.PI * 2);
+            context.stroke();
+            bIsDrawing = false;
+        }
+        //These events are for mouse drop, mouse move and mouse up.
+        canvas2.addEventListener('mousedown', putPoint);
+        canvas2.addEventListener('mousemove', drawPoint);
+        canvas2.addEventListener('mouseup', stopPoint);
+
+
+        //This is for the initial rectangle
+        ctx.fillStyle = '#808080';
+        var distance = 25
+        for (var i = 1; i <= 20; i++) {
+            for (j = 1; j <= 20; j++) {
+                if (canvas1.getContext) {
+                    // color of fill
+                    ctx.fillRect(distance * i, distance * j, 10, 10); // create rectangle  
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
